@@ -23,10 +23,10 @@ Box_Y_max = 100.0 # Maximum der Box in Y-Richtung
 
 class Box:
     def __init__(self): #Verbindet Box mit den Grenzen oben
-        self.x_min = Box_X_Min
-        self.x_max = Box_X_Max
-        self.y_min = Box_Y_Min
-        self.y_max = Box_Y_Max
+        self.x_min = Box_X_min
+        self.x_max = Box_X_max
+        self.y_min = Box_Y_min
+        self.y_max = Box_Y_max
 
     def Kollision_mit_Wand(self, Position, nächste_Position): #Berechnet die Kolisionen mit den Wänden und ob das Teilchen außerhalb der Wände ist
         x_n, y_n, vx_n, vy_n = Position
@@ -113,3 +113,21 @@ class Teilchen:
     def Aktualisierter_Vektor(self, neue_Position): # Aktualisiert die das Teilchen und seine Position
         self.position = neue_Position
         self.history.append(self.get_position().copy())
+
+# Klasse für die Simulation:
+
+class Simulation:
+    def __init__(self, Ursprungs_Punkt, dt, totale_Zeit, output_filename="simulations_output.txt"):
+        self.Teilchen = []
+        for i, state in enumerate(Ursprungs_Punkt):
+            self.Teilchen.append(Teilchen(state[0], state[1], state[2], state[3], i))
+
+        self.dt = dt
+        self.total_time = totale_Zeit
+        self.current_time = 0.0
+        self.box = Box()
+        
+        self.output_filename = output_filename
+        self.fout = open(self.output_filename, 'w')
+        self._write_header()
+        self._log_data() 
