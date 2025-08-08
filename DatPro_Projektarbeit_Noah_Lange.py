@@ -131,3 +131,10 @@ class Simulation:
         self.fout = open(self.output_filename, 'w')
         self._write_header()
         self._log_data() 
+
+    def Runge_kutta_verfahren(dgl, f, sn, k, dt):
+        k1 = dt * f(sn)
+        k2 = dt * f(sn * 0,5 * k1)
+        k3 = dt * f(sn * 0,5 * k2)
+        k4 = dt * f(sn + k3)
+        return sn + k1 / 6 + k2 / 3 + k3 / 3 + k4 / 6 (dt**5)
