@@ -74,3 +74,42 @@ class Box:
         elif Wand_Kolision in ['y_min', 'y_max']:
             reflektierte_Geschwindigkeit[1] *= -1
         return reflektierte_Geschwindigkeit
+    
+    # Klasse für die Teilchen und ihre Geschwindigkeiten
+
+class Teilchen:
+    def __init__(self, x, y, vx, vy, p_id):
+        self.id = p_id
+        
+        self.position = np.array([x, y, vx, vy], dtype=float) 
+        
+        self.m = M
+        self.q = Q
+        
+        self.history = [self.get_position().copy()] 
+
+    @property
+    def x(self): # Gibt mir die X-Position
+        return self.position[0]
+
+    @property
+    def y(self): # Gibt mit die Y-Position
+        return self.position[1]
+
+    @property
+    def vx(self): # Gibt mir die X_Geschwindigkeit
+        return self.position[2]
+
+    @property
+    def vy(self): # Gibt mir die Y-GEschwindigkeit
+        return self.position[3]
+
+    def get_position(self): # Gibt Positionsvektor
+        return self.position[:2]
+
+    def get_Geschwindigkeit(self): # Gibt Geschwindigkeitsvektor
+        return self.position[2:]
+
+    def Aktualisierter_Vektor(self, neue_Position): # Aktualisiert die das Teilchen und seine Position
+        self.position = neue_Position
+        self.history.append(self.get_position().copy())
