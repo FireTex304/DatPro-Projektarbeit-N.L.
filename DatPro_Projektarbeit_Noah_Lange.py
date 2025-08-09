@@ -270,7 +270,7 @@ def simulation_starten_und_animieren(Ursprung, dt, totale_Zeit, output_filename 
     print(f"\nAnimation beendet. Daten in '{output_filename}' gespeichert.")
     plt.show()
 
-def plot_final_results(): # Erstellt die statischen Plots nach der Simulation
+def Ergebnisse_Plot(): # Erstellt die statischen Plots nach der Simulation
     try:
         df = pd.read_csv(output_file, sep='\t')
     except FileNotFoundError:
@@ -290,3 +290,14 @@ def plot_final_results(): # Erstellt die statischen Plots nach der Simulation
 if __name__ == "__main__":
     simulation_starten_und_animieren(Ursprung, dt, totale_Zeit)
     plot_final_results()
+
+# Unittests zur Überprüfung des Codes
+
+def Unitest(unittestTestCase):
+    def Konstanten_Box(self):  # Setzt die Konstanten auf Testwerte zurück, falls sie im Hauptcode geändert wurden
+        self.Box = Box()
+        self.Box.x_min = 0.0
+        self.Box.x_max = 100.0
+        self.Box.y_min = 0.0
+        self.Box.y_max = 100.0
+    
