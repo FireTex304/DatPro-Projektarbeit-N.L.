@@ -191,3 +191,30 @@ class Simulation:
 
         self.aktuelle_zeit += self.dt
         self.protokolliere_daten()
+    
+    def Ausführung(self): # Führt die Simulation für die Gesamte Simulationsdauer aus und dann in die Ausgabedatei gespeicherz
+        anzahl_schritte = int(self.gesamtzeit / self.dt)
+        print(f"Starte Simulation für {anzahl_schritte} Schritte mit dt={self.dt}")
+
+        for i in range(anzahl_schritte):
+            self.schritt()
+            if (i+1) % max(1, anzahl_schritte // 10) == 0:
+                print(f"Fortschritt: {((i+1)/anzahl_schritte*100):.1f}%")
+
+        self.ausgabedatei.close()
+        print(f"Simulation beendet. Daten in '{self.dateiname_ausgabe}' gespeichert.")
+
+    def header(self):
+        header = ["Zeit", "Gesamtenergie"]
+        for t in self.Teilchen:
+            header.extend([f"T{t.id}_x", f"T{t.id}_y", f"T{t.id}_vx", f"T{t.id}_vy"])
+        self.fout.write("\t".join(header) + "\n")
+
+    def daten_loggen(self):
+        daten = [f"{self.aktuelle_Zeit:.6f}", f"{self.gesamtenergie_berechnen():.6f}"]
+        for t in self.Teilchen:
+            daten.extend([f"{t.x:.6f}", f"{t.y:.6f}", f"{t.vx:.6f}", f"{t.vy:.6f}"])
+        self.fout.write("\t".join(daten) + "\n")
+
+    def teilchen_verlauf(self):
+        return {t.id: np.array(t.history) for t in self.Teilchen}
