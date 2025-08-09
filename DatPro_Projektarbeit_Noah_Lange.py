@@ -124,7 +124,7 @@ class Simulation:
 
         self.dt = dt
         self.total_time = totale_Zeit
-        self.current_time = 0.0
+        self.aktuelle_Zeit = 0.0
         self.box = Box()
         
         self.output_filename = output_filename
@@ -146,10 +146,10 @@ class Simulation:
         return s + (k1 + 2*k2 + 2*k3 + k4) / 6.0
     
     def Gesamtenergie(self): # Berechnet die Gesamtenergie aus den einzelnen Energien
-        energie = sum(-t.m * G * t.y + 0.5 * t.m * (t.vx**2 + t.vy**2) for t in self.teilchen)
+        energie = sum(-t.m * G * t.y + 0.5 * t.m * (t.vx**2 + t.vy**2) for t in self.Teilchen)
 
-        for i, t_i in enumerate(self.teilchen):
-            for t_j in self.teilchen[i+1:]:
+        for i, t_i in enumerate(self.Teilchen):
+            for t_j in self.Teilchen[i+1:]:
                 abstand = max(np.linalg.norm(t_i.get_position() - t_j.get_position()), 1e-9)
                 energie += 0.5 * (t_i.q * t_j.q) / abstand
 
@@ -160,7 +160,7 @@ class Simulation:
         ax, ay = 0.0, G
         pos_i = np.array([x, y])
 
-        for t in self.teilchen:
+        for t in self.Teilchen:
             if t.id == teilchen_index:
                 continue
             r = pos_i - t.get_position()
@@ -170,21 +170,21 @@ class Simulation:
             ay += kraft_pro_abstand * r[1]
         return np.array([vx, vy, ax, ay])
     
-    def Zeitschritt(self): # Führt einen Zeitschritt aus
+    def schritt(self): # Führt einen Zeitschritt aus
         neue_zustände = []
-        for i, teilchen in enumerate(self.teilchen):
-            zustand, rest_dt = np.copy(teilchen.state), self.dt
+        for i, Teilchen in enumerate(self.Teilchen):
+            zustand, rest_dt = np.copy(Teilchen.position), self.dt
             bewegung = lambda s: self.bewegungsgleichung(s, i)
 
             while rest_dt > 1e-12:
-                vorhersage = self.rk4_schritt(bewegung, zustand, rest_dt)
-                anteil, wand = self.box.get_Kolisions_Zeit(zustand, vorhersage)
+                vorhergesagt = self.Runge_kutta_verfahren(bewegung, zustand, rest_dt)
+                anteil, wand = self.box.Kollision_mit_Wand(zustand, vorhergesagt)
                 dt_schritt = rest_dt * anteil
 
-                zustand = self.rk4_schritt(bewegung, zustand, dt_schritt)
+                zustand = self.Runge_kutta_verfahren(bewegung, zustand, dt_schritt)
 
-                if wand != 'none':
-                    zustand[2:] = self.box.Reflektierte.Geschwindigkeit(zustand[2:], wand)
+                if wand != 'Kein': 
+                    zustand[2:] = self.box.Reflexion(zustand[2:], wand) 
                     zustand[0] = np.clip(zustand[0], self.box.x_min + 1e-9, self.box.x_max - 1e-9)
                     zustand[1] = np.clip(zustand[1], self.box.y_min + 1e-9, self.box.y_max - 1e-9)
 
@@ -192,35 +192,49 @@ class Simulation:
 
             neue_zustände.append(zustand)
 
-        for t, z in zip(self.teilchen, neue_zustände):
-            t.update_state(z)
+        for t, z in zip(self.Teilchen, neue_zustände):
+            t.Aktualisierter_Vektor(z)
 
-        self.aktuelle_zeit += self.dt
-        self.protokolliere_daten()
+        self.aktuelle_Zeit += self.dt
+        self.log_data()
     
     def Ausführung(self): # Führt die Simulation für die Gesamte Simulationsdauer aus und dann in die Ausgabedatei gespeichert
-        anzahl_schritte = int(self.gesamtzeit / self.dt)
+        anzahl_schritte = int(self.total_time / self.dt)  # <<< geändert
         print(f"Starte Simulation für {anzahl_schritte} Schritte mit dt={self.dt}")
 
         for i in range(anzahl_schritte):
-            self.schritt()
+            self.schritt()  
             if (i+1) % max(1, anzahl_schritte // 10) == 0:
                 print(f"Fortschritt: {((i+1)/anzahl_schritte*100):.1f}%")
 
-        self.ausgabedatei.close()
+        self.fout.close()
         print(f"Simulation beendet. Daten in '{self.dateiname_ausgabe}' gespeichert.")
 
     def log_data(self): # Loggt die Daten der Zeiten und Gesamtenergien der Teilchen
-        daten = [f"{self.aktuelle_Zeit:.6f}", f"{self.gesamtenergie_berechnen():.6f}"]
-        for t in self.Teilchen:
-            daten.extend([f"{t.x:.6f}", f"{t.y:.6f}", f"{t.vx:.6f}", f"{t.vy:.6f}"])
-        self.fout.write("\t".join(daten) + "\n")
-
-    def teilchen_verlauf(self): # Der Teilchen Verlauf in der Ausgabedatei
+        daten = [f"{self.aktuelle_Zeit:.6f}", f"{self.Gesamtenergie():.6f}"]
+        with open(self.output_filename, "a") as f:
+            f.write("\t".join(daten) + "\n")
+    
+    def teilchen_verlauf(self):  # Der Teilchen Verlauf in der Ausgabedatei
         return {t.id: np.array(t.history) for t in self.Teilchen}
 
-def simulation_starten_und_animieren(Ursprung, dt, totale_Zeit, output_file):
-    sim = Simulation(Ursprung, dt, totale_Zeit, output_filename=output_file)
+Ursprung = [
+    (1.0, 45.0, 10.0, 0.0),
+    (99.0, 55.0, -10.0, 0.0),
+    (10.0, 50.0, 15.0, -15.0),
+    (20.0, 30.0, -15.0, -15.0),
+    (80.0, 70.0, 15.0, 15.0),
+    (80.0, 60.0, 15.0, 15.0),
+    (80.0, 50.0, 15.0, 15.0)
+]
+
+dt = 0.001
+totale_Zeit = 10.0
+plot_update_interval = 20 # Aktualisiere den Plot alle 20 Schritte
+output_file = "simulations_Ergebnisse.txt"
+
+def simulation_starten_und_animieren(Ursprung, dt, totale_Zeit, output_filename = output_file):
+    sim = Simulation(Ursprung, dt, totale_Zeit, output_filename=output_filename)
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.set_xlim(Box_X_min, Box_X_max)
     ax.set_ylim(Box_Y_min, Box_Y_max)
@@ -229,3 +243,50 @@ def simulation_starten_und_animieren(Ursprung, dt, totale_Zeit, output_file):
     ax.set_xlabel('X-Position')
     ax.set_ylabel('Y-Position')
     ax.grid(True)
+
+    # Punkte für die Teilchen
+    punkte = [ax.plot([], [], 'o', markersize=5, label=f'Teilchen {t.id+1}')[0] for t in sim.Teilchen]
+    ax.legend(loc='upper right')
+    plt.show(block=False)
+
+    # Simulations und Animationsschleife
+    anzahl_schritte = int(totale_Zeit / dt)
+    print(f"Starte animierte Simulation für {anzahl_schritte} Schritte mit dt={dt}")
+
+    for schritt in range(anzahl_schritte):
+        sim.schritt()
+
+        if schritt % plot_update_interval == 0:
+            for i, t in enumerate(sim.Teilchen):
+                punkte[i].set_data([t.x], [t.y])
+
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+            plt.pause(0.001)
+
+            if (schritt + 1) % (anzahl_schritte // 10) == 0:
+                print(f"Fortschritt: {((schritt + 1) / anzahl_schritte * 100):.1f}%")
+
+    print(f"\nAnimation beendet. Daten in '{output_filename}' gespeichert.")
+    plt.show()
+
+def plot_final_results(): # Erstellt die statischen Plots nach der Simulation
+    try:
+        df = pd.read_csv(output_file, sep='\t')
+    except FileNotFoundError:
+        print("Ausgabedatei nicht gefunden. Simulation muss zuerst laufen.")
+        return
+
+    # Plot des Energieverlaufs
+    plt.figure(figsize=(10, 6))
+    plt.plot(df['Zeit'], df['Gesamtenergie'])
+    plt.title('Gesamtenergie des Systems über die Zeit')
+    plt.xlabel('Zeit (t)')
+    plt.ylabel('Gesamtenergie (E)')
+    plt.grid(True)
+    plt.savefig('energie_verlauf.png')
+    plt.show()
+
+if __name__ == "__main__":
+    simulation_starten_und_animieren(Ursprung, dt, totale_Zeit)
+    plot_final_results()
