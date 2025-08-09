@@ -137,7 +137,7 @@ class Simulation:
         k2 = dt * f(sn * 0,5 * k1)
         k3 = dt * f(sn * 0,5 * k2)
         k4 = dt * f(sn + k3)
-        return sn + k1 / 6 + k2 / 3 + k3 / 3 + k4 / 6 (dt**5)
+        return sn + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
     
     def Gesamtenergie(self): # Berechnet die Gesamtenergie aus den einzelnen Energien
         energie = sum(-t.m * G * t.y + 0.5 * t.m * (t.vx**2 + t.vy**2) for t in self.teilchen)
@@ -204,7 +204,7 @@ class Simulation:
         self.ausgabedatei.close()
         print(f"Simulation beendet. Daten in '{self.dateiname_ausgabe}' gespeichert.")
 
-    def header(self):
+    def header(self): # Schreibt die Spaltennamen in die Ausgabedatei
         header = ["Zeit", "Gesamtenergie"]
         for t in self.Teilchen:
             header.extend([f"T{t.id}_x", f"T{t.id}_y", f"T{t.id}_vx", f"T{t.id}_vy"])
@@ -218,3 +218,15 @@ class Simulation:
 
     def teilchen_verlauf(self):
         return {t.id: np.array(t.history) for t in self.Teilchen}
+
+state_Vektoren = [ # Die gegebenen State Vektoren der Teilchen
+    (1.0, 45.0, 10.0, 0.0),
+    (99.0, 55.0, -10.0, 0.0),
+    (10.0, 50.0, 15.0, -15.0),
+    (20.0, 30.0, -15.0, -15.0),
+    (80.0, 70.0, 15.0, 15.0),
+    (80.0, 60.0, 15.0, 15.0),
+    (80.0, 50.0, 15.0, 15.0)]
+
+dt = 0.001 # Startzeit der Simulation
+total_time = 10.0 # Endzeit der Simulation
