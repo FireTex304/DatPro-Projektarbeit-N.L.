@@ -129,15 +129,21 @@ class Simulation:
         
         self.output_filename = output_filename
         self.fout = open(self.output_filename, 'w')
-        self._write_header()
-        self._log_data() 
+        self.header()
+        self.log_data() 
+    
+    def header(self): # Schreibt die Spaltennamen in die Ausgabedatei
+        header = ["Zeit", "Gesamtenergie"]
+        for t in self.Teilchen:
+            header.extend([f"T{t.id}_x", f"T{t.id}_y", f"T{t.id}_vx", f"T{t.id}_vy"])
+        self.fout.write("\t".join(header) + "\n")
 
-    def Runge_kutta_verfahren(dgl, f, sn, k, dt): # Lösen des Runge Kutta Verfahrens
-        k1 = dt * f(sn)
-        k2 = dt * f(sn * 0,5 * k1)
-        k3 = dt * f(sn * 0,5 * k2)
-        k4 = dt * f(sn + k3)
-        return sn + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+    def Runge_kutta_verfahren(self, f, s, dt): # Lösen des Runge Kutta Verfahrens
+        k1 = dt * f(s)
+        k2 = dt * f(s + 0.5 * k1)
+        k3 = dt * f(s + 0.5 * k2)
+        k4 = dt * f(s + k3)
+        return s + (k1 + 2*k2 + 2*k3 + k4) / 6.0
     
     def Gesamtenergie(self): # Berechnet die Gesamtenergie aus den einzelnen Energien
         energie = sum(-t.m * G * t.y + 0.5 * t.m * (t.vx**2 + t.vy**2) for t in self.teilchen)
@@ -192,7 +198,7 @@ class Simulation:
         self.aktuelle_zeit += self.dt
         self.protokolliere_daten()
     
-    def Ausführung(self): # Führt die Simulation für die Gesamte Simulationsdauer aus und dann in die Ausgabedatei gespeicherz
+    def Ausführung(self): # Führt die Simulation für die Gesamte Simulationsdauer aus und dann in die Ausgabedatei gespeichert
         anzahl_schritte = int(self.gesamtzeit / self.dt)
         print(f"Starte Simulation für {anzahl_schritte} Schritte mit dt={self.dt}")
 
@@ -204,29 +210,22 @@ class Simulation:
         self.ausgabedatei.close()
         print(f"Simulation beendet. Daten in '{self.dateiname_ausgabe}' gespeichert.")
 
-    def header(self): # Schreibt die Spaltennamen in die Ausgabedatei
-        header = ["Zeit", "Gesamtenergie"]
-        for t in self.Teilchen:
-            header.extend([f"T{t.id}_x", f"T{t.id}_y", f"T{t.id}_vx", f"T{t.id}_vy"])
-        self.fout.write("\t".join(header) + "\n")
-
-    def daten_loggen(self):
+    def log_data(self): # Loggt die Daten der Zeiten und Gesamtenergien der Teilchen
         daten = [f"{self.aktuelle_Zeit:.6f}", f"{self.gesamtenergie_berechnen():.6f}"]
         for t in self.Teilchen:
             daten.extend([f"{t.x:.6f}", f"{t.y:.6f}", f"{t.vx:.6f}", f"{t.vy:.6f}"])
         self.fout.write("\t".join(daten) + "\n")
 
-    def teilchen_verlauf(self):
+    def teilchen_verlauf(self): # Der Teilchen Verlauf in der Ausgabedatei
         return {t.id: np.array(t.history) for t in self.Teilchen}
 
-state_Vektoren = [ # Die gegebenen State Vektoren der Teilchen
-    (1.0, 45.0, 10.0, 0.0),
-    (99.0, 55.0, -10.0, 0.0),
-    (10.0, 50.0, 15.0, -15.0),
-    (20.0, 30.0, -15.0, -15.0),
-    (80.0, 70.0, 15.0, 15.0),
-    (80.0, 60.0, 15.0, 15.0),
-    (80.0, 50.0, 15.0, 15.0)]
-
-dt = 0.001 # Startzeit der Simulation
-total_time = 10.0 # Endzeit der Simulation
+def simulation_starten_und_animieren(Ursprung, dt, totale_Zeit, output_file):
+    sim = Simulation(Ursprung, dt, totale_Zeit, output_filename=output_file)
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.set_xlim(Box_X_min, Box_X_max)
+    ax.set_ylim(Box_Y_min, Box_Y_max)
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_title('Teilchensimulation')
+    ax.set_xlabel('X-Position')
+    ax.set_ylabel('Y-Position')
+    ax.grid(True)
