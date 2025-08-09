@@ -132,25 +132,62 @@ class Simulation:
         self._write_header()
         self._log_data() 
 
-    def Runge_kutta_verfahren(dgl, f, sn, k, dt):
+    def Runge_kutta_verfahren(dgl, f, sn, k, dt): # Lösen des Runge Kutta Verfahrens
         k1 = dt * f(sn)
         k2 = dt * f(sn * 0,5 * k1)
         k3 = dt * f(sn * 0,5 * k2)
         k4 = dt * f(sn + k3)
         return sn + k1 / 6 + k2 / 3 + k3 / 3 + k4 / 6 (dt**5)
     
-    def _gesamtenergie_berechnen(self):
-        gesamt = 0.0
-        # Potentielle Energie durch Gravitation + kinetische Energie
-        for t in self.Teilchen:
-            gesamt += -t.m * G * t.y
-            gesamt += 0.5 * t.m * (t.vx**2 + t.vy**2)
-        # Potentielle Energie durch Coulomb-Kräfte
-        for i, t1 in enumerate(self.Teilchen):
-            for j, t2 in enumerate(self.Teilchen):
-                if i >= j:
-                    continue
-                dist = np.linalg.norm(t1.get_position() - t2.get_position())
-                dist = max(dist, 1e-9)
-                gesamt += 0.5 * (t1.q * t2.q) / dist
-        return gesamt
+    def Gesamtenergie(self): # Berechnet die Gesamtenergie aus den einzelnen Energien
+        energie = sum(-t.m * G * t.y + 0.5 * t.m * (t.vx**2 + t.vy**2) for t in self.teilchen)
+
+        for i, t_i in enumerate(self.teilchen):
+            for t_j in self.teilchen[i+1:]:
+                abstand = max(np.linalg.norm(t_i.get_position() - t_j.get_position()), 1e-9)
+                energie += 0.5 * (t_i.q * t_j.q) / abstand
+
+        return energie
+
+    def bewegungsgleichung(self, zustand, teilchen_index): # Löst die Bewegungsgleichung
+        x, y, vx, vy = zustand
+        ax, ay = 0.0, G
+        pos_i = np.array([x, y])
+
+        for t in self.teilchen:
+            if t.id == teilchen_index:
+                continue
+            r = pos_i - t.get_position()
+            abstand_q = max(np.dot(r, r), 1e-9)
+            kraft_pro_abstand = Q**2 / (abstand_q**1.5)
+            ax += kraft_pro_abstand * r[0]
+            ay += kraft_pro_abstand * r[1]
+        return np.array([vx, vy, ax, ay])
+    
+    def Zeitschritt(self): # Führt einen Zeitschritt aus
+        neue_zustände = []
+        for i, teilchen in enumerate(self.teilchen):
+            zustand, rest_dt = np.copy(teilchen.state), self.dt
+            bewegung = lambda s: self.bewegungsgleichung(s, i)
+
+            while rest_dt > 1e-12:
+                vorhersage = self.rk4_schritt(bewegung, zustand, rest_dt)
+                anteil, wand = self.box.get_Kolisions_Zeit(zustand, vorhersage)
+                dt_schritt = rest_dt * anteil
+
+                zustand = self.rk4_schritt(bewegung, zustand, dt_schritt)
+
+                if wand != 'none':
+                    zustand[2:] = self.box.Reflektierte.Geschwindigkeit(zustand[2:], wand)
+                    zustand[0] = np.clip(zustand[0], self.box.x_min + 1e-9, self.box.x_max - 1e-9)
+                    zustand[1] = np.clip(zustand[1], self.box.y_min + 1e-9, self.box.y_max - 1e-9)
+
+                rest_dt -= dt_schritt
+
+            neue_zustände.append(zustand)
+
+        for t, z in zip(self.teilchen, neue_zustände):
+            t.update_state(z)
+
+        self.aktuelle_zeit += self.dt
+        self.protokolliere_daten()
