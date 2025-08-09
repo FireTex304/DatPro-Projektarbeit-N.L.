@@ -289,11 +289,11 @@ def Ergebnisse_Plot(): # Erstellt die statischen Plots nach der Simulation
 
 if __name__ == "__main__":
     simulation_starten_und_animieren(Ursprung, dt, totale_Zeit)
-    plot_final_results()
+    Ergebnisse_Plot()
 
 # Unittests zur Überprüfung des Codes
 
-def Unitest(unittestTestCase):
+def Unitest(unittest_TestCase):
     def Konstanten_Box(self):  # Setzt die Konstanten auf Testwerte zurück, falls sie im Hauptcode geändert wurden
         self.Box = Box()
         self.Box.x_min = 0.0
@@ -301,3 +301,38 @@ def Unitest(unittestTestCase):
         self.Box.y_min = 0.0
         self.Box.y_max = 100.0
     
+    def Kolision_X_Wand(self):
+
+        # Test für Kollision mit x_min
+
+        position = np.array([5.0, 50.0, -10.0, 0.0]) # Bewegt sich nach links
+        nächste_position = np.array([-5.0, 50.0, -10.0, 0.0])
+        dt_fraction, wand_hit = self.box.Kollision_mit_Wand(position, nächste_position)
+        self.assertAlmostEqual(dt_fraction, 0.5, 5) # Sollte bei der Hälfte der Strecke kollidieren
+        self.assertEqual(wand_hit, 'x_min')
+
+        # Test für Kollision mit x_max
+
+        position = np.array([95.0, 50.0, 10.0, 0.0]) # Bewegt sich nach rechts
+        nächste_position = np.array([105.0, 50.0, 10.0, 0.0])
+        dt_fraction, wand_hit = self.box.Kollision_mit_Wand(position, nächste_position)
+        self.assertAlmostEqual(dt_fraction, 0.5, 5) # Sollte bei der Hälfte der Strecke kollidieren
+        self.assertEqual(wand_hit, 'x_max')
+
+    def Kolision_Y_Wand(self):
+
+        # Test für Kollision mit y_min
+
+        position = np.array([50.0, 5.0, 0.0, -10.0]) # Bewegt sich nach unten
+        nächste_Position = np.array([50.0, -5.0, 0.0, -10.0])
+        dt_fraction, wand_hit = self.box.Kollision_mit_Wand(position, nächste_position)
+        self.assertAlmostEqual(dt_fraction, 0.5, 5)
+        self.assertEqual(wand_hit, 'y_min')
+
+        # Test für Kollision mit y_max
+
+        position = np.array([50.0, 95.0, 0.0, 10.0]) # Bewegt sich nach oben
+        nächste_Position = np.array([50.0, 105.0, 0.0, 10.0])
+        dt_fraction, wand_hit = self.box.Kollision_mit_Wand(position, nächste_position)
+        self.assertAlmostEqual(dt_fraction, 0.5, 5)
+        self.assertEqual(wand_hit, 'y_max')
