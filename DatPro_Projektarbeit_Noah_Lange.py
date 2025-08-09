@@ -119,8 +119,8 @@ class Teilchen:
 class Simulation:
     def __init__(self, Ursprungs_Punkt, dt, totale_Zeit, output_filename="simulations_output.txt"):
         self.Teilchen = []
-        for i, state in enumerate(Ursprungs_Punkt):
-            self.Teilchen.append(Teilchen(state[0], state[1], state[2], state[3], i))
+        for i, position in enumerate(Ursprungs_Punkt):
+            self.Teilchen.append(Teilchen(position[0], position[1], position[2], position[3], i))
 
         self.dt = dt
         self.total_time = totale_Zeit
@@ -138,3 +138,19 @@ class Simulation:
         k3 = dt * f(sn * 0,5 * k2)
         k4 = dt * f(sn + k3)
         return sn + k1 / 6 + k2 / 3 + k3 / 3 + k4 / 6 (dt**5)
+    
+    def _gesamtenergie_berechnen(self):
+        gesamt = 0.0
+        # Potentielle Energie durch Gravitation + kinetische Energie
+        for t in self.Teilchen:
+            gesamt += -t.m * G * t.y
+            gesamt += 0.5 * t.m * (t.vx**2 + t.vy**2)
+        # Potentielle Energie durch Coulomb-Kräfte
+        for i, t1 in enumerate(self.Teilchen):
+            for j, t2 in enumerate(self.Teilchen):
+                if i >= j:
+                    continue
+                dist = np.linalg.norm(t1.get_position() - t2.get_position())
+                dist = max(dist, 1e-9)
+                gesamt += 0.5 * (t1.q * t2.q) / dist
+        return gesamt
